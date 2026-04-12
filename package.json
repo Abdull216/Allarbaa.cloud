@@ -1,11 +1,8 @@
 {
   "name": "allarbaa-boost",
   "version": "1.0.0",
-  "description": "Allarbaa Boost — Real Traffic Service",
   "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "scripts": { "start": "node index.js" },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "express": "^4.18.2",
@@ -14,6 +11,5 @@
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.7"
-    # allarbaa boost
   }
 }
