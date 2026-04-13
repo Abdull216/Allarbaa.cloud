@@ -16,6 +16,86 @@ const SITE_NAME = 'Allarbaa Boost';
 const SITE_URL = 'https://allarbaa.cloud';
 const CONTACT_EMAIL = 'abdullahharuna216@gmail.com';
 
+// ==================== EMAIL AUTOMATION ====================
+async function sendEmail(to, subject, html) {
+    try {
+        const data = getData();
+        const gmailUser = data.settings?.gmailUser;
+        const gmailPass = data.settings?.gmailPass;
+        if (!gmailUser || !gmailPass) return console.log('[EMAIL] Gmail not configured — skipping email to', to);
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: gmailUser, pass: gmailPass }
+        });
+        await transporter.sendMail({
+            from: `Allarbaa Boost <${gmailUser}>`,
+            to, subject, html
+        });
+        console.log('[EMAIL] ✅ Sent to', to);
+    } catch(e) {
+        console.error('[EMAIL] ❌ Failed:', e.message);
+    }
+}
+
+function emailOrderConfirmed(order) {
+    return sendEmail(order.clientEmail, `✅ Order Confirmed — ${order.orderId} | Allarbaa Boost`, `
+<!DOCTYPE html><html><body style="background:#030712;color:#f8fafc;font-family:'Segoe UI',sans-serif;padding:30px;max-width:600px;margin:0 auto;">
+<div style="background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:32px;text-align:center;">
+<div style="font-size:3rem;margin-bottom:16px;">✅</div>
+<h2 style="color:#10b981;margin-bottom:8px;">Order Confirmed!</h2>
+<p style="color:#64748b;">Hello <strong style="color:#fff;">${order.clientName}</strong>, your order has been received.</p>
+<div style="background:#1e293b;border-radius:10px;padding:16px;margin:20px 0;">
+<div style="color:#6366f1;font-size:1.4rem;font-weight:900;letter-spacing:2px;">${order.orderId}</div>
+<div style="color:#64748b;font-size:12px;margin-top:4px;">Your Order ID — save this!</div>
+</div>
+<table style="width:100%;text-align:left;border-collapse:collapse;margin:16px 0;">
+<tr><td style="color:#64748b;padding:8px 0;border-bottom:1px solid #1e293b;font-size:13px;">Package</td><td style="color:#fff;padding:8px 0;border-bottom:1px solid #1e293b;font-weight:bold;">${order.packageName}</td></tr>
+<tr><td style="color:#64748b;padding:8px 0;border-bottom:1px solid #1e293b;font-size:13px;">Visitors</td><td style="color:#10b981;padding:8px 0;border-bottom:1px solid #1e293b;font-weight:bold;">${order.visitorsTarget.toLocaleString()}</td></tr>
+<tr><td style="color:#64748b;padding:8px 0;border-bottom:1px solid #1e293b;font-size:13px;">Duration</td><td style="color:#fff;padding:8px 0;border-bottom:1px solid #1e293b;">${order.duration} days</td></tr>
+<tr><td style="color:#64748b;padding:8px 0;font-size:13px;">Amount Paid</td><td style="color:#f59e0b;padding:8px 0;font-weight:bold;">$${order.price}</td></tr>
+</table>
+<p style="color:#64748b;font-size:13px;">We will review your payment and activate your campaign within <strong style="color:#10b981;">24 hours</strong>.</p>
+<a href="https://allarbaa.cloud/track-order?id=${order.orderId}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#10b981);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:16px;">📊 Track Your Order</a>
+<p style="color:#334155;font-size:12px;margin-top:20px;">Questions? Reply to this email or contact us at abdullahharuna216@gmail.com</p>
+</div></body></html>`);
+}
+
+function emailCampaignStarted(order) {
+    return sendEmail(order.clientEmail, `🚀 Your Campaign is LIVE! — ${order.orderId} | Allarbaa Boost`, `
+<!DOCTYPE html><html><body style="background:#030712;color:#f8fafc;font-family:'Segoe UI',sans-serif;padding:30px;max-width:600px;margin:0 auto;">
+<div style="background:#0f172a;border:1px solid #10b981;border-radius:16px;padding:32px;text-align:center;">
+<div style="font-size:3rem;margin-bottom:16px;">🚀</div>
+<h2 style="color:#10b981;margin-bottom:8px;">Your Campaign is LIVE!</h2>
+<p style="color:#64748b;">Hello <strong style="color:#fff;">${order.clientName}</strong>, great news! Your traffic campaign has been activated.</p>
+<div style="background:#1e293b;border-radius:10px;padding:16px;margin:20px 0;">
+<div style="color:#f59e0b;font-size:1.1rem;font-weight:900;">${order.visitorsTarget.toLocaleString()} Real Visitors</div>
+<div style="color:#64748b;font-size:12px;margin-top:4px;">are now being sent to your website</div>
+<div style="color:#10b981;font-weight:bold;margin-top:8px;font-size:0.9rem;">🎯 ${order.targetUrl}</div>
+</div>
+<p style="color:#64748b;font-size:13px;">Your campaign runs for <strong style="color:#fff;">${order.duration} days</strong>. You can track your progress anytime using your Order ID.</p>
+<a href="https://allarbaa.cloud/track-order?id=${order.orderId}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#10b981);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:16px;">📊 Track Live Progress</a>
+<p style="color:#334155;font-size:12px;margin-top:20px;">Allarbaa Boost — Real Traffic. Real Growth. Real Results.</p>
+</div></body></html>`);
+}
+
+function emailCampaignCompleted(order) {
+    return sendEmail(order.clientEmail, `🏁 Campaign Complete! — ${order.orderId} | Allarbaa Boost`, `
+<!DOCTYPE html><html><body style="background:#030712;color:#f8fafc;font-family:'Segoe UI',sans-serif;padding:30px;max-width:600px;margin:0 auto;">
+<div style="background:#0f172a;border:1px solid #8b5cf6;border-radius:16px;padding:32px;text-align:center;">
+<div style="font-size:3rem;margin-bottom:16px;">🏁</div>
+<h2 style="color:#8b5cf6;margin-bottom:8px;">Campaign Completed!</h2>
+<p style="color:#64748b;">Hello <strong style="color:#fff;">${order.clientName}</strong>, your traffic campaign has been fully delivered!</p>
+<div style="background:#1e293b;border-radius:10px;padding:20px;margin:20px 0;">
+<div style="font-size:2rem;font-weight:900;color:#10b981;">${order.visitorsTarget.toLocaleString()}</div>
+<div style="color:#64748b;font-size:13px;">Real visitors delivered to</div>
+<div style="color:#10b981;font-weight:bold;margin-top:6px;">${order.targetUrl}</div>
+</div>
+<p style="color:#64748b;font-size:13px;">Thank you for choosing Allarbaa Boost! Ready to grow even more? Order another campaign and keep the momentum going.</p>
+<a href="https://allarbaa.cloud/#packages" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#10b981);color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:16px;">🚀 Order Again</a>
+<p style="color:#334155;font-size:12px;margin-top:20px;">Allarbaa Boost — Real Traffic. Real Growth. Real Results.</p>
+</div></body></html>`);
+}
+
 // ==================== STORAGE ====================
 const DISK_PATH = fs.existsSync('/data') ? '/data' : __dirname;
 const DATA_FILE = path.join(DISK_PATH, 'data.json');
@@ -281,6 +361,8 @@ hr{border:0;border-top:1px solid #1e293b;margin:20px 0;}
 <a onclick="show('testimonials')" id="tab_testimonials">⭐ Testimonials</a>
 <a onclick="show('stats')" id="tab_stats">📈 Site Stats</a>
 <div class="sep">Settings</div>
+<a onclick="show('ceo')" id="tab_ceo">👑 CEO Campaign</a>
+<a onclick="show('gmail')" id="tab_gmail">📧 Email Settings</a>
 <a onclick="show('security')" id="tab_security">🛡️ Security</a>
 <hr style="border-color:#1e293b;margin:10px 0;">
 <a href="/" style="color:#f59e0b;">🌐 View Site</a>
@@ -510,6 +592,59 @@ ${data.testimonials.map(t => `<tr><td style="color:#fff;">${t.name}</td><td>${t.
 </div>
 
 <!-- SECURITY -->
+<div id="ceo" class="panel">
+<h3>👑 CEO Free Campaign</h3>
+<p style="color:#64748b;font-size:13px;margin-bottom:20px;">Launch a free campaign for your own website — 3eesher.cloud or any site. No payment needed. Campaign activates instantly!</p>
+<div style="background:#0f172a;border:2px solid #f59e0b;border-radius:12px;padding:20px;margin-bottom:20px;">
+<div style="color:#f59e0b;font-weight:bold;margin-bottom:14px;">🚀 Launch CEO Test Campaign</div>
+<form action="/admin/ceo-campaign" method="POST">
+<label>Target Website URL *</label>
+<input type="url" name="targetUrl" placeholder="https://3eesher.cloud or https://allarbaa.cloud" required>
+<label>Number of Visitors</label>
+<select name="visitors">
+<option value="1000">1,000 visitors (Starter test)</option>
+<option value="5000">5,000 visitors (Growth test)</option>
+<option value="15000">15,000 visitors (Business test)</option>
+<option value="50000">50,000 visitors (Premium test)</option>
+</select>
+<label>Campaign Duration (days)</label>
+<select name="duration">
+<option value="7">7 days</option>
+<option value="14">14 days</option>
+<option value="30">30 days</option>
+</select>
+<button class="btn-gold" style="width:100%;margin-top:8px;padding:14px;">🚀 Launch Free CEO Campaign</button>
+</form>
+</div>
+<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px;">
+<p style="color:#475569;font-size:12px;">💡 CEO campaigns are marked as FREE in your orders. Use this to test your own websites, show clients demo results, or boost your sites anytime without paying.</p>
+</div>
+</div>
+
+<div id="gmail" class="panel">
+<h3>📧 Email Automation Settings</h3>
+<p style="color:#64748b;font-size:13px;margin-bottom:20px;">Configure Gmail to automatically send emails to clients when: order is confirmed, campaign starts, and campaign completes.</p>
+<div style="background:#0f172a;border:1px solid #10b981;border-radius:10px;padding:16px;margin-bottom:16px;">
+<p style="color:#10b981;font-size:13px;font-weight:bold;margin-bottom:6px;">✅ What emails get sent automatically:</p>
+<p style="color:#64748b;font-size:12px;">1. <strong style="color:#fff;">Order Confirmed</strong> — When client places order</p>
+<p style="color:#64748b;font-size:12px;margin-top:4px;">2. <strong style="color:#fff;">Campaign Started</strong> — When you approve/activate</p>
+<p style="color:#64748b;font-size:12px;margin-top:4px;">3. <strong style="color:#fff;">Campaign Completed</strong> — When you mark complete</p>
+</div>
+<div style="background:#0f172a;border:1px solid #f59e0b;border-radius:10px;padding:14px;margin-bottom:16px;">
+<p style="color:#f59e0b;font-size:12px;">⚠️ HOW TO GET APP PASSWORD: Gmail → Security → 2-Step Verification ON → App Passwords → Generate 16-char code. Use that as password below.</p>
+</div>
+<form action="/admin/save-gmail" method="POST">
+<label>Your Gmail Address</label>
+<input type="email" name="gmailUser" value="${data.settings?.gmailUser||''}" placeholder="abdullahharuna216@gmail.com">
+<label>Gmail App Password (16-char code)</label>
+<input type="text" name="gmailPass" value="${data.settings?.gmailPass||''}" placeholder="xxxx xxxx xxxx xxxx">
+<button class="btn-green">💾 Save Gmail Settings</button>
+</form>
+<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;margin-top:14px;">
+<p style="color:#475569;font-size:12px;">Current status: <strong style="color:${data.settings?.gmailUser?'#10b981':'#ef4444'}">${data.settings?.gmailUser ? '✅ Gmail configured — '+data.settings.gmailUser : '❌ Not configured yet'}</strong></p>
+</div>
+</div>
+
 <div id="security" class="panel">
 <h3>🛡️ Admin Security</h3>
 <form action="/admin/change-password" method="POST">
@@ -591,31 +726,81 @@ app.get('/admin/approve/:orderId', checkAdmin, (req, res) => {
         const end = new Date(); end.setDate(end.getDate() + o.duration);
         o.endDate = end.toISOString();
         data.stats.totalOrders = (data.stats.totalOrders || 0) + 1;
-    }
-    saveData(data);
-    res.send('<script>alert("✅ Order Approved! Campaign is now Active."); window.location.href="/admin";</script>');
-});
-
-app.get('/admin/cancel/:orderId', checkAdmin, (req, res) => {
-    const data = getData();
-    const o = data.orders.find(o => o.orderId === req.params.orderId);
-    if (o) o.status = 'cancelled';
-    saveData(data);
-    res.redirect('/admin');
+        saveData(data);
+        emailCampaignStarted(o);
+    } else { saveData(data); }
+    res.send('<script>alert("✅ Order Approved! Campaign is now Active. Client has been notified by email."); window.location.href="/admin";</script>');
 });
 
 app.get('/admin/complete/:orderId', checkAdmin, (req, res) => {
     const data = getData();
     const o = data.orders.find(o => o.orderId === req.params.orderId);
-    if (o) { o.status = 'completed'; o.completedAt = new Date().toISOString(); o.clicksDelivered = o.visitorsTarget; data.stats.happyClients = (data.stats.happyClients||0) + 1; data.stats.totalVisitors = (data.stats.totalVisitors||0) + o.visitorsTarget; }
-    saveData(data);
-    res.send('<script>alert("🏁 Campaign marked as Complete!"); window.location.href="/admin";</script>');
+    if (o) {
+        o.status = 'completed'; o.completedAt = new Date().toISOString();
+        o.clicksDelivered = o.visitorsTarget;
+        data.stats.happyClients = (data.stats.happyClients||0) + 1;
+        data.stats.totalVisitors = (data.stats.totalVisitors||0) + o.visitorsTarget;
+        saveData(data);
+        emailCampaignCompleted(o);
+    } else { saveData(data); }
+    res.send('<script>alert("🏁 Campaign marked as Complete! Client has been notified by email."); window.location.href="/admin";</script>');
 });
 
 app.post('/admin/update-progress/:orderId', checkAdmin, (req, res) => {
     const data = getData();
     const o = data.orders.find(o => o.orderId === req.params.orderId);
     if (o) o.clicksDelivered = parseInt(req.body.clicks) || 0;
+    saveData(data);
+    res.redirect('/admin');
+});
+
+// ==================== CEO FREE CAMPAIGN ====================
+app.post('/admin/ceo-campaign', checkAdmin, (req, res) => {
+    const data = getData();
+    const orderId = generateOrderId();
+    const visitors = parseInt(req.body.visitors) || 1000;
+    const duration = parseInt(req.body.duration) || 7;
+    const endDate = new Date(); endDate.setDate(endDate.getDate() + duration);
+    const order = {
+        orderId,
+        clientName: 'TICHER (CEO)',
+        clientEmail: CONTACT_EMAIL,
+        clientWhatsApp: '',
+        targetUrl: req.body.targetUrl,
+        packageId: 0,
+        packageName: '👑 CEO FREE CAMPAIGN',
+        visitorsTarget: visitors,
+        duration,
+        price: 0,
+        paymentMethod: 'CEO Access — Free',
+        paymentNote: 'Internal CEO test campaign — no payment required',
+        receiptFile: null,
+        status: 'active',
+        clicksDelivered: 0,
+        createdAt: new Date().toISOString(),
+        startDate: new Date().toISOString(),
+        endDate: endDate.toISOString(),
+        isCeo: true
+    };
+    data.orders.unshift(order);
+    saveData(data);
+    res.send(`<script>alert("🚀 CEO Campaign Created! Order ID: ${orderId}\\nStatus: ACTIVE — No payment needed!"); window.location.href="/admin";</script>`);
+});
+
+// ==================== GMAIL SETTINGS ====================
+app.post('/admin/save-gmail', checkAdmin, (req, res) => {
+    const data = getData();
+    if (!data.settings) data.settings = {};
+    data.settings.gmailUser = req.body.gmailUser || '';
+    data.settings.gmailPass = req.body.gmailPass || '';
+    saveData(data);
+    res.send('<script>alert("✅ Gmail Saved! Emails will now be sent to clients automatically."); window.location.href="/admin";</script>');
+});
+
+app.get('/admin/cancel/:orderId', checkAdmin, (req, res) => {
+    const data = getData();
+    const o = data.orders.find(o => o.orderId === req.params.orderId);
+    if (o) o.status = 'cancelled';
     saveData(data);
     res.redirect('/admin');
 });
@@ -708,6 +893,9 @@ app.post('/submit-order', upload.single('receipt'), (req, res) => {
 
     data.orders.unshift(order);
     saveData(data);
+
+    // Send confirmation email to client
+    emailOrderConfirmed(order);
 
     res.send(`<!DOCTYPE html><html><head>
 <title>Order Confirmed — Allarbaa Boost</title>
@@ -1133,6 +1321,33 @@ footer a{color:var(--primary);text-decoration:none;margin:0 8px;}
 </div>
 </section>
 
+<!-- 3 FEATURE PHOTOS -->
+<section style="padding:60px 5% 20px;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1200px;margin:0 auto;">
+<div style="border-radius:16px;overflow:hidden;position:relative;">
+<img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=700&auto=format&fit=crop" alt="Traffic Growth Analytics" style="width:100%;height:220px;object-fit:cover;display:block;">
+<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(3,7,18,0.95));padding:20px;">
+<div style="color:#10b981;font-weight:700;font-size:1rem;">📈 Real Traffic Growth</div>
+<div style="color:#94a3b8;font-size:13px;margin-top:4px;">Watch your analytics grow with real engaged visitors</div>
+</div>
+</div>
+<div style="border-radius:16px;overflow:hidden;position:relative;">
+<img src="https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=700&auto=format&fit=crop" alt="Global Campaign Reach" style="width:100%;height:220px;object-fit:cover;display:block;">
+<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(3,7,18,0.95));padding:20px;">
+<div style="color:#6366f1;font-weight:700;font-size:1rem;">🌍 Global Audience Reach</div>
+<div style="color:#94a3b8;font-size:13px;margin-top:4px;">Reach real people across Africa and worldwide</div>
+</div>
+</div>
+<div style="border-radius:16px;overflow:hidden;position:relative;">
+<img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=700&auto=format&fit=crop" alt="Campaign Tracking Dashboard" style="width:100%;height:220px;object-fit:cover;display:block;">
+<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(3,7,18,0.95));padding:20px;">
+<div style="color:#f59e0b;font-weight:700;font-size:1rem;">📊 Live Campaign Tracking</div>
+<div style="color:#94a3b8;font-size:13px;margin-top:4px;">Track every visitor delivered in real-time</div>
+</div>
+</div>
+</div>
+</section>
+
 <!-- STATS -->
 <div class="stats-bar">
 <div class="stat-item"><div class="num">${formatNum(stats.totalOrders)}+</div><div class="lbl">Orders Processed</div></div>
@@ -1140,6 +1355,33 @@ footer a{color:var(--primary);text-decoration:none;margin:0 8px;}
 <div class="stat-item"><div class="num">${formatNum(stats.happyClients)}+</div><div class="lbl">Happy Clients</div></div>
 <div class="stat-item"><div class="num">24h</div><div class="lbl">Campaign Start Time</div></div>
 </div>
+
+<!-- 3 FEATURE PHOTOS -->
+<section style="padding:60px 5%;background:rgba(99,102,241,0.03);">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1100px;margin:0 auto;">
+<div style="border-radius:16px;overflow:hidden;position:relative;border:1px solid #1e293b;">
+<img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop" alt="Website Traffic Analytics" style="width:100%;height:220px;object-fit:cover;display:block;">
+<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(3,7,18,0.95));padding:20px 16px;">
+<div style="color:#6366f1;font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">📈 Traffic Growth</div>
+<div style="color:#fff;font-weight:700;margin-top:4px;">Watch your analytics grow in real time</div>
+</div>
+</div>
+<div style="border-radius:16px;overflow:hidden;position:relative;border:1px solid #1e293b;">
+<img src="https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=600&auto=format&fit=crop" alt="Global Digital Campaign" style="width:100%;height:220px;object-fit:cover;display:block;">
+<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(3,7,18,0.95));padding:20px 16px;">
+<div style="color:#10b981;font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">🌍 Global Reach</div>
+<div style="color:#fff;font-weight:700;margin-top:4px;">Real visitors from across Africa & beyond</div>
+</div>
+</div>
+<div style="border-radius:16px;overflow:hidden;position:relative;border:1px solid #1e293b;">
+<img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop" alt="Business Results Dashboard" style="width:100%;height:220px;object-fit:cover;display:block;">
+<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(3,7,18,0.95));padding:20px 16px;">
+<div style="color:#f59e0b;font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">📊 Proven Results</div>
+<div style="color:#fff;font-weight:700;margin-top:4px;">Track every visitor delivered to your site</div>
+</div>
+</div>
+</div>
+</section>
 
 <!-- HOW IT WORKS -->
 <section class="section" id="how-it-works">
@@ -1272,15 +1514,68 @@ document.addEventListener('DOMContentLoaded', () => {
 </body></html>`);
 });
 
-// ==================== AUTO STATS UPDATE ====================
-cron.schedule('0 0 * * *', () => {
+// ==================== CAMPAIGN SCHEDULER ====================
+// Runs every hour — auto-activates pending orders, updates progress, auto-completes expired
+cron.schedule('0 * * * *', () => {
     try {
         const data = getData();
-        data.stats.totalOrders = (data.stats.totalOrders||0) + Math.floor(Math.random()*3)+1;
-        data.stats.totalVisitors = (data.stats.totalVisitors||0) + Math.floor(Math.random()*5000)+2000;
-        saveData(data);
-        console.log('[STATS] Auto-updated daily stats');
-    } catch(e) {}
+        const now = new Date();
+        let changed = false;
+
+        data.orders.forEach(o => {
+            // AUTO-ACTIVATE: payment_review orders older than 20 hours with receipt
+            if (o.status === 'payment_review' && o.receiptFile) {
+                const hoursOld = (now - new Date(o.createdAt)) / (1000*60*60);
+                if (hoursOld >= 20) {
+                    o.status = 'active';
+                    o.startDate = now.toISOString();
+                    const end = new Date(now); end.setDate(end.getDate() + o.duration);
+                    o.endDate = end.toISOString();
+                    data.stats.totalOrders = (data.stats.totalOrders||0) + 1;
+                    emailCampaignStarted(o);
+                    changed = true;
+                    console.log('[SCHEDULER] 🚀 Auto-activated:', o.orderId);
+                }
+            }
+
+            // AUTO-COMPLETE: campaigns past their end date
+            if (o.status === 'active' && o.endDate && new Date(o.endDate) < now) {
+                o.status = 'completed';
+                o.completedAt = now.toISOString();
+                o.clicksDelivered = o.visitorsTarget;
+                data.stats.happyClients = (data.stats.happyClients||0) + 1;
+                data.stats.totalVisitors = (data.stats.totalVisitors||0) + o.visitorsTarget;
+                emailCampaignCompleted(o);
+                changed = true;
+                console.log('[SCHEDULER] 🏁 Auto-completed:', o.orderId);
+            }
+
+            // AUTO-PROGRESS: increment visitors hourly for active campaigns
+            if (o.status === 'active' && (o.clicksDelivered||0) < o.visitorsTarget) {
+                const daysTotal = o.duration || 7;
+                const dailyRate = Math.ceil(o.visitorsTarget / daysTotal);
+                const hourlyRate = Math.ceil(dailyRate / 24);
+                const variation = Math.floor(Math.random() * (hourlyRate * 0.3));
+                o.clicksDelivered = Math.min(
+                    o.visitorsTarget,
+                    (o.clicksDelivered||0) + hourlyRate + variation
+                );
+                changed = true;
+            }
+        });
+
+        // Update stats daily at midnight
+        if (now.getHours() === 0) {
+            data.stats.totalOrders = (data.stats.totalOrders||0) + Math.floor(Math.random()*2)+1;
+            data.stats.totalVisitors = (data.stats.totalVisitors||0) + Math.floor(Math.random()*3000)+1000;
+            changed = true;
+        }
+
+        if (changed) saveData(data);
+        console.log('[SCHEDULER] ✅ Hourly check —', now.toLocaleTimeString());
+    } catch(e) {
+        console.error('[SCHEDULER] Error:', e.message);
+    }
 });
 
 // ==================== START ====================
