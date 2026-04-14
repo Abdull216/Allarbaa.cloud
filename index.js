@@ -134,6 +134,8 @@ function getData() {
             if (!d.payment) d.payment = getDefaultPayment();
             if (!d.campaigns) d.campaigns = [];
             if (!d.packages) d.packages = getDefaultPackages();
+            if (!d.contacts) d.contacts = [];
+            if (!d.contactVisits) d.contactVisits = [];
             return d;
         }
     } catch(e) {}
@@ -194,7 +196,9 @@ function getDefaultData() {
             tagline: 'Real Traffic. Real Growth. Real Results.',
             gmailUser: '',
             gmailPass: ''
-        }
+        },
+        contacts: [],
+        contactVisits: []
     };
 }
 
@@ -355,6 +359,8 @@ hr{border:0;border-top:1px solid #1e293b;margin:20px 0;}
 <a onclick="show('orders')" id="tab_orders">📋 All Orders <span class="badge" style="background:#6366f1;color:#fff;float:right;">${data.orders.length}</span></a>
 <a onclick="show('pending')" id="tab_pending">⏳ Pending Review <span class="badge" style="background:#f59e0b;color:#000;float:right;">${pending}</span></a>
 <a onclick="show('active')" id="tab_active">✅ Active Campaigns <span class="badge" style="background:#10b981;color:#000;float:right;">${active}</span></a>
+<div class="sep">Traffic Network</div>
+<a onclick="show('contacts')" id="tab_contacts">👥 Contacts <span class="badge" style="background:#10b981;color:#000;float:right;">${(data.contacts||[]).length}</span></a>
 <div class="sep">Management</div>
 <a onclick="show('packages')" id="tab_packages">📦 Edit Packages</a>
 <a onclick="show('payment')" id="tab_payment">💳 Payment Settings</a>
@@ -489,10 +495,129 @@ ${data.orders.filter(o => o.status === 'active').map(o => {
 }).join('') || '<div style="text-align:center;padding:60px;color:#334155;border:2px dashed #1e293b;border-radius:12px;"><p>No active campaigns right now.</p></div>'}
 </div>
 
+<!-- CONTACTS TRAFFIC NETWORK -->
+<div id="contacts" class="panel">
+<h3>👥 Contacts Traffic Network</h3>
+<p style="color:#64748b;font-size:13px;margin-bottom:18px;">Add your contacts who agreed to visit websites in exchange for free digital library access. Send them visit links via WhatsApp or Email.</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;">
+<div style="background:#0f172a;border:1px solid #10b981;border-radius:10px;padding:14px;text-align:center;">
+<div style="font-size:1.8rem;font-weight:900;color:#10b981;">${(data.contacts||[]).length}</div>
+<div style="color:#64748b;font-size:12px;">Total Contacts</div>
+</div>
+<div style="background:#0f172a;border:1px solid #6366f1;border-radius:10px;padding:14px;text-align:center;">
+<div style="font-size:1.8rem;font-weight:900;color:#6366f1;">${(data.contactVisits||[]).filter(v=>v.clicked).length}</div>
+<div style="color:#64748b;font-size:12px;">Real Visits Delivered</div>
+</div>
+</div>
+
+<!-- ADD SINGLE CONTACT -->
+<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:18px;margin-bottom:16px;">
+<h4 style="color:#ffd700;margin-bottom:14px;">➕ Add Single Contact</h4>
+<form action="/admin/add-contact" method="POST" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;">
+<div><label>Full Name</label><input type="text" name="name" placeholder="Ahmad Musa" required style="margin:4px 0 0;"></div>
+<div><label>WhatsApp Number</label><input type="text" name="phone" placeholder="+2348012345678" style="margin:4px 0 0;"></div>
+<div><label>Email (optional)</label><input type="email" name="email" placeholder="ahmad@gmail.com" style="margin:4px 0 0;"></div>
+<button type="submit" class="btn-green" style="height:42px;white-space:nowrap;">Add</button>
+</form>
+</div>
+
+<!-- BULK ADD -->
+<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:18px;margin-bottom:16px;">
+<h4 style="color:#f59e0b;margin-bottom:10px;">📋 Bulk Add Contacts</h4>
+<p style="color:#475569;font-size:12px;margin-bottom:10px;">Format each line: <code style="color:#10b981;">Name|phone|email</code> — or just phone number per line</p>
+<form action="/admin/bulk-contacts" method="POST">
+<textarea name="bulkData" rows="5" placeholder="Ahmad Musa|+2348012345678|ahmad@gmail.com&#10;Fatima Hassan|+2347098765432&#10;Ibrahim Sale|+2348055512345|ibrahim@yahoo.com"></textarea>
+<button class="btn-gold">📋 Add All Contacts</button>
+</form>
+</div>
+
+<!-- BLAST TO ORDER -->
+<div style="background:#0f172a;border:1px solid #6366f1;border-radius:10px;padding:18px;margin-bottom:16px;">
+<h4 style="color:#6366f1;margin-bottom:14px;">🚀 Send Visit Links to Contacts</h4>
+<p style="color:#475569;font-size:12px;margin-bottom:14px;">Select an active order and contacts to send visit links to. Each contact gets a unique link — when they click it, it counts as a real visit for the client's campaign.</p>
+<form action="/admin/blast-contacts" method="POST">
+<label>Select Active Campaign/Order</label>
+<select name="orderId" style="margin-bottom:12px;">
+<option value="">-- Select Order --</option>
+${data.orders.filter(o=>o.status==='active').map(o=>`<option value="${o.orderId}">${o.orderId} — ${o.clientName} — ${o.packageName} (${o.clicksDelivered||0}/${formatNum(o.visitorsTarget)} delivered)</option>`).join('')}
+</select>
+<label>Select Contacts (hold Ctrl/Cmd to select multiple)</label>
+<select name="contactIds" multiple style="min-height:120px;margin-bottom:12px;">
+${(data.contacts||[]).map(c=>`<option value="${c.id}">${c.name} ${c.phone?'· '+c.phone:''} ${c.email?'· '+c.email:''} · ${c.totalVisits||0} visits done</option>`).join('')}
+</select>
+<button class="btn-green">⚡ Generate Visit Links</button>
+</form>
+</div>
+
+<!-- EMAIL BLAST -->
+<div style="background:#0f172a;border:1px solid #10b981;border-radius:10px;padding:18px;margin-bottom:16px;">
+<h4 style="color:#10b981;margin-bottom:10px;">📧 Send Email to Contacts</h4>
+<p style="color:#475569;font-size:12px;margin-bottom:12px;">After generating visit links above, send beautiful emails to contacts with their unique visit link + library access reward.</p>
+<form action="/admin/email-blast-contacts" method="POST" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+<div style="flex:1;min-width:200px;">
+<label>Order ID to Email For</label>
+<select name="orderId" style="margin:4px 0 0;">
+<option value="">-- Select Order --</option>
+${data.orders.filter(o=>o.status==='active').map(o=>`<option value="${o.orderId}">${o.orderId} — ${o.clientName}</option>`).join('')}
+</select>
+</div>
+<button type="submit" style="background:#10b981;color:#000;font-weight:bold;padding:10px 16px;border:none;border-radius:8px;cursor:pointer;height:42px;">📧 Send Email Blast</button>
+</form>
+</div>
+
+<!-- WHATSAPP BLAST HELPER -->
+<div style="background:#0f172a;border:1px solid #25D366;border-radius:10px;padding:18px;margin-bottom:16px;">
+<h4 style="color:#25D366;margin-bottom:10px;">💬 WhatsApp Blast Helper</h4>
+<p style="color:#475569;font-size:12px;margin-bottom:12px;">After generating links, copy visit links below and send manually via WhatsApp. Or use this pre-written message template:</p>
+<div style="background:#111;border-radius:8px;padding:14px;font-size:12px;color:#94a3b8;line-height:1.8;border:1px solid #25D366;">
+Salam! 👋 Ina so in ba ka FREE access zuwa digital library — courses 100+ kyauta game da making money online, web development, da karin. 📚<br><br>
+Abin da nake roƙon: ✅ Ziyarci wannan website ɗaya (sakan 10 kawai)<br><br>
+🔗 [SAKA LINK ɗin CONTACT A NAN]<br><br>
+Bayan ka click, za ka samu library access kyauta! 🎁
+</div>
+<p style="color:#334155;font-size:11px;margin-top:8px;">Copy this message, replace the link with each contact's unique visit link from the table below.</p>
+</div>
+
+<!-- CONTACTS TABLE -->
+<h4 style="color:#94a3b8;margin-bottom:12px;">📋 All Contacts (${(data.contacts||[]).length})</h4>
+${(data.contacts||[]).length ? `
+<div style="overflow-x:auto;">
+<table>
+<tr><th>Name</th><th>Phone (WhatsApp)</th><th>Email</th><th>Visits Done</th><th>Last Visit</th><th>Action</th></tr>
+${(data.contacts||[]).map(c=>`<tr>
+<td style="color:#fff;font-weight:600;">${c.name}</td>
+<td>${c.phone ? `<a href="https://wa.me/${c.phone.replace(/[^0-9]/g,'')}" target="_blank" style="color:#25D366;text-decoration:none;">💬 ${c.phone}</a>` : '<span style="color:#334155;">—</span>'}</td>
+<td style="color:#64748b;font-size:12px;">${c.email||'—'}</td>
+<td><span class="badge" style="background:${(c.totalVisits||0)>0?'#10b981':'#334155'};color:${(c.totalVisits||0)>0?'#000':'#64748b'}">${c.totalVisits||0} visits</span></td>
+<td style="color:#475569;font-size:12px;">${c.lastVisit?new Date(c.lastVisit).toLocaleDateString():'Never'}</td>
+<td><a href="/admin/delete-contact/${c.id}" style="color:#ef4444;font-size:12px;" onclick="return confirm('Delete contact?')">Delete</a></td>
+</tr>`).join('')}
+</table>
+</div>` : '<div style="text-align:center;padding:40px;color:#334155;border:2px dashed #1e293b;border-radius:10px;">No contacts yet. Add your first contact above!</div>'}
+
+<!-- VISIT LINKS TABLE -->
+${(data.contactVisits||[]).length ? `
+<h4 style="color:#94a3b8;margin-top:24px;margin-bottom:12px;">🔗 Generated Visit Links (${(data.contactVisits||[]).length} total)</h4>
+<div style="overflow-x:auto;">
+<table>
+<tr><th>Contact</th><th>Order</th><th>Visit Link</th><th>Status</th><th>Visited At</th></tr>
+${(data.contactVisits||[]).slice(0,30).map(v=>`<tr>
+<td style="color:#fff;">${v.contactName}</td>
+<td style="color:#6366f1;font-size:12px;">${v.orderId}</td>
+<td><a href="${SITE_URL}/visit/${v.token}" style="color:#10b981;font-size:11px;word-break:break-all;" target="_blank">/visit/${v.token.substring(0,12)}...</a>
+<button onclick="copyLink('${SITE_URL}/visit/${v.token}')" style="background:#1e293b;color:#94a3b8;border:none;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin-left:4px;">Copy</button>
+</td>
+<td><span class="badge" style="background:${v.clicked?'#10b981':'#f59e0b'};color:${v.clicked?'#000':'#000'}">${v.clicked?'✅ Visited':'⏳ Pending'}</span></td>
+<td style="color:#475569;font-size:12px;">${v.clicked&&v.clickedAt?new Date(v.clickedAt).toLocaleString():'—'}</td>
+</tr>`).join('')}
+</table>
+</div>` : ''}
+</div>
+
 <!-- PACKAGES -->
 <div id="packages" class="panel">
 <h3>📦 Edit Packages</h3>
-<p style="color:#64748b;font-size:13px;margin-bottom:20px;">Edit your service packages. Changes reflect immediately on homepage.</p>
 <div class="pkg-grid">
 ${data.packages.map(p => `<div class="pkg-card" style="border-top:3px solid ${p.color};">
 <h4>${p.emoji} ${p.name}</h4>
@@ -661,6 +786,13 @@ function show(id){
     document.querySelectorAll('.sidebar a[onclick]').forEach(a=>a.classList.remove('active'));
     document.getElementById(id).style.display='block';
     const t=document.getElementById('tab_'+id);if(t)t.classList.add('active');
+}
+function copyLink(url){
+    navigator.clipboard.writeText(url).then(()=>alert('✅ Link copied!')).catch(()=>{
+        const ta=document.createElement('textarea');ta.value=url;
+        document.body.appendChild(ta);ta.select();document.execCommand('copy');
+        document.body.removeChild(ta);alert('✅ Link copied!');
+    });
 }
 document.querySelectorAll('.panel').forEach(p=>{p.style.display='none';});
 document.getElementById('dash').style.display='block';
@@ -1576,6 +1708,204 @@ cron.schedule('0 * * * *', () => {
     } catch(e) {
         console.error('[SCHEDULER] Error:', e.message);
     }
+});
+
+// ==================== 🌐 CONTACTS TRAFFIC NETWORK ====================
+
+// Contact clicks visit link → logs real IP visit → redirects to target site
+app.get('/visit/:token', (req, res) => {
+    const data = getData();
+    const token = req.params.token;
+    // Find which contact+order this token belongs to
+    const visitRecord = data.contactVisits.find(v => v.token === token && !v.clicked);
+    if (!visitRecord) {
+        return res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{background:#030712;color:#f8fafc;font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;}
+.box{background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:32px;max-width:400px;}
+h2{color:#ef4444;margin-bottom:12px;}p{color:#64748b;}</style></head>
+<body><div class="box"><h2>⚠️ Link Expired</h2><p>This visit link has already been used or has expired. Ask for a new link.</p></div></body></html>`);
+    }
+
+    // Mark as clicked with real IP and timestamp
+    visitRecord.clicked = true;
+    visitRecord.clickedAt = new Date().toISOString();
+    visitRecord.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+    visitRecord.userAgent = req.headers['user-agent'] || '';
+
+    // Update the order's click count
+    const order = data.orders.find(o => o.orderId === visitRecord.orderId);
+    if (order && order.status === 'active') {
+        order.clicksDelivered = Math.min(order.visitorsTarget, (order.clicksDelivered || 0) + 1);
+    }
+
+    // Update contact stats
+    const contact = data.contacts.find(c => c.id === visitRecord.contactId);
+    if (contact) {
+        contact.totalVisits = (contact.totalVisits || 0) + 1;
+        contact.lastVisit = new Date().toISOString();
+    }
+
+    saveData(data);
+    console.log('[TRAFFIC] ✅ Real visit from contact:', visitRecord.contactName, '→', visitRecord.targetUrl);
+
+    // Show reward page briefly then redirect
+    const targetUrl = visitRecord.targetUrl;
+    res.send(`<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="3;url=${targetUrl}">
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#030712;color:#f8fafc;font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;}
+.box{background:#0f172a;border:1px solid #10b981;border-radius:20px;padding:36px;max-width:420px;}
+.icon{font-size:3rem;margin-bottom:16px;}
+h2{color:#10b981;margin-bottom:10px;}
+p{color:#64748b;font-size:0.95rem;line-height:1.6;margin-bottom:16px;}
+.reward{background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(16,185,129,0.1));border:1px solid #6366f1;border-radius:12px;padding:14px;margin-bottom:16px;}
+.reward-title{color:#6366f1;font-weight:bold;font-size:0.85rem;margin-bottom:6px;}
+.progress{background:#1e293b;border-radius:10px;height:6px;margin-top:10px;}
+.progress-bar{height:6px;border-radius:10px;background:linear-gradient(90deg,#6366f1,#10b981);animation:load 3s linear forwards;}
+@keyframes load{from{width:0%}to{width:100%}}
+a{display:inline-block;background:linear-gradient(135deg,#6366f1,#10b981);color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:0.9rem;}
+</style></head>
+<body><div class="box">
+<div class="icon">✅</div>
+<h2>Shukran! Thank You!</h2>
+<p>Your visit has been recorded. You are helping support a real website owner.</p>
+<div class="reward">
+<div class="reward-title">🎁 YOUR REWARD</div>
+<div style="color:#fff;font-weight:bold;">Free Digital Library Access</div>
+<div style="color:#64748b;font-size:12px;margin-top:4px;">Access 100+ free courses, guides and tools at Allarbaa.cloud</div>
+</div>
+<p style="color:#475569;font-size:13px;">Redirecting you to the website in 3 seconds...</p>
+<div class="progress"><div class="progress-bar"></div></div>
+<br>
+<a href="${targetUrl}">Go Now →</a>
+<br><br>
+<a href="https://allarbaa.cloud/library" style="background:#1e293b;margin-top:8px;display:inline-block;">📚 Claim Library Access</a>
+</div></body></html>`);
+});
+
+// Generate visit tokens for contacts to blast to an order
+app.post('/admin/blast-contacts', checkAdmin, (req, res) => {
+    const data = getData();
+    const orderId = req.body.orderId;
+    const contactIds = [].concat(req.body.contactIds || []);
+    const order = data.orders.find(o => o.orderId === orderId);
+    if (!order) return res.send('<script>alert("Order not found!"); history.back();</script>');
+
+    if (!data.contactVisits) data.contactVisits = [];
+    let generated = 0;
+
+    contactIds.forEach(cid => {
+        const contact = data.contacts.find(c => c.id == cid);
+        if (!contact) return;
+        const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        data.contactVisits.push({
+            token,
+            contactId: contact.id,
+            contactName: contact.name,
+            contactEmail: contact.email,
+            contactPhone: contact.phone,
+            orderId,
+            targetUrl: order.targetUrl,
+            createdAt: new Date().toISOString(),
+            clicked: false,
+            clickedAt: null,
+            ip: null,
+            userAgent: null
+        });
+        generated++;
+    });
+
+    saveData(data);
+    res.send(`<script>alert("✅ ${generated} visit links generated! Go to the Contacts tab to send them via WhatsApp or Email."); window.location.href="/admin";</script>`);
+});
+
+// Admin: add a single contact
+app.post('/admin/add-contact', checkAdmin, (req, res) => {
+    const data = getData();
+    if (!data.contacts) data.contacts = [];
+    const exists = data.contacts.find(c => c.phone === req.body.phone || c.email === req.body.email);
+    if (exists) return res.send('<script>alert("Contact already exists!"); history.back();</script>');
+    data.contacts.push({
+        id: Date.now(),
+        name: req.body.name,
+        phone: req.body.phone || '',
+        email: req.body.email || '',
+        addedAt: new Date().toISOString(),
+        totalVisits: 0,
+        lastVisit: null
+    });
+    saveData(data);
+    res.send('<script>alert("✅ Contact Added!"); window.location.href="/admin";</script>');
+});
+
+// Admin: bulk add contacts (comma/newline separated)
+app.post('/admin/bulk-contacts', checkAdmin, (req, res) => {
+    const data = getData();
+    if (!data.contacts) data.contacts = [];
+    const raw = req.body.bulkData || '';
+    const lines = raw.split(/[\n,]+/).map(l => l.trim()).filter(Boolean);
+    let added = 0;
+    lines.forEach(line => {
+        // Support formats: "Name|phone|email" or "phone" or "email"
+        const parts = line.split('|').map(p => p.trim());
+        const name = parts[0] || 'Contact ' + (data.contacts.length + added + 1);
+        const phone = parts[1] || (parts[0].match(/^\+?[0-9]{7,}$/) ? parts[0] : '');
+        const email = parts[2] || (parts[0].includes('@') ? parts[0] : '');
+        if (!phone && !email) return;
+        const exists = data.contacts.find(c => (phone && c.phone === phone) || (email && c.email === email));
+        if (!exists) {
+            data.contacts.push({ id: Date.now() + added, name, phone, email, addedAt: new Date().toISOString(), totalVisits: 0, lastVisit: null });
+            added++;
+        }
+    });
+    saveData(data);
+    res.send(`<script>alert("✅ ${added} contacts added!"); window.location.href="/admin";</script>`);
+});
+
+// Admin: delete contact
+app.get('/admin/delete-contact/:id', checkAdmin, (req, res) => {
+    const data = getData();
+    data.contacts = data.contacts.filter(c => c.id != req.params.id);
+    saveData(data);
+    res.redirect('/admin');
+});
+
+// Admin: send Gmail blast to contacts for an order
+app.post('/admin/email-blast-contacts', checkAdmin, async (req, res) => {
+    const data = getData();
+    const orderId = req.body.orderId;
+    const order = data.orders.find(o => o.orderId === orderId);
+    if (!order) return res.send('<script>alert("Order not found!"); history.back();</script>');
+
+    // Get pending visit tokens for this order
+    const pendingVisits = (data.contactVisits || []).filter(v => v.orderId === orderId && !v.clicked && v.contactEmail);
+    if (!pendingVisits.length) return res.send('<script>alert("No contacts with email found for this order. Generate visit links first."); history.back();</script>');
+
+    let sent = 0, failed = 0;
+    for (const visit of pendingVisits) {
+        const visitLink = `${SITE_URL}/visit/${visit.token}`;
+        try {
+            await sendEmail(visit.contactEmail, `🎁 Free Digital Library Access — Just Visit One Website!`, `
+<!DOCTYPE html><html><body style="background:#030712;color:#f8fafc;font-family:'Segoe UI',sans-serif;padding:24px;max-width:580px;margin:0 auto;">
+<div style="background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:28px;">
+<h2 style="color:#10b981;margin-bottom:10px;">Salam ${visit.contactName}! 👋</h2>
+<p style="color:#94a3b8;margin-bottom:16px;line-height:1.7;">I want to offer you <strong style="color:#fff;">FREE access</strong> to our digital skills library — 100+ free courses, guides and tools for making money online.</p>
+<div style="background:#1e293b;border-radius:10px;padding:16px;margin-bottom:18px;border-left:4px solid #6366f1;">
+<div style="color:#6366f1;font-weight:bold;margin-bottom:6px;">🎁 What you get FREE:</div>
+<div style="color:#94a3b8;font-size:13px;">✓ 100+ Digital Skills Courses</div>
+<div style="color:#94a3b8;font-size:13px;margin-top:4px;">✓ Affiliate Marketing Guides</div>
+<div style="color:#94a3b8;font-size:13px;margin-top:4px;">✓ Make Money Online Resources</div>
+<div style="color:#94a3b8;font-size:13px;margin-top:4px;">✓ Web Development Tutorials</div>
+</div>
+<p style="color:#64748b;font-size:13px;margin-bottom:18px;">All I ask in return: <strong style="color:#fff;">just visit one website</strong> (takes 10 seconds). This helps support a local business owner.</p>
+<a href="${visitLink}" style="display:block;background:linear-gradient(135deg,#6366f1,#10b981);color:#fff;padding:14px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:1rem;text-align:center;">🚀 Visit Site & Claim Free Access →</a>
+<p style="color:#334155;font-size:11px;margin-top:16px;text-align:center;">From Ticher — Allarbaa.cloud | Reply to unsubscribe</p>
+</div></body></html>`);
+            sent++;
+        } catch(e) { failed++; }
+        await new Promise(r => setTimeout(r, 300));
+    }
+    res.send(`<script>alert("📧 Email blast complete!\\n✅ Sent: ${sent}\\n❌ Failed: ${failed}"); window.location.href="/admin";</script>`);
 });
 
 // ==================== START ====================
